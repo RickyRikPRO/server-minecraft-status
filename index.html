@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giocatori Online su Mio Server Minecraft</title>
+    <link rel="icon" type="image/png" href="https://mcstatus.io/img/icon.png"> <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #e0f2f7; /* Azzurro chiaro */
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Allinea in alto */
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: #ffffff;
+            margin-top: 50px; /* Sposta il container un po' più in basso */
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+            max-width: 550px;
+            width: 100%;
+            text-align: center;
+            border: 1px solid #cce7ee;
+        }
+        h1 {
+            color: #007bff; /* Blu acceso */
+            font-size: 2.2em;
+            margin-bottom: 15px;
+        }
+        .server-info {
+            font-size: 1.1em;
+            color: #555;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        .server-info strong {
+            color: #0056b3;
+        }
+        #playerCount {
+            font-size: 1.6em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #4CAF50; /* Verde */
+        }
+        #playerList {
+            list-style-type: none;
+            padding: 0;
+            max-height: 250px; /* Limita altezza della lista */
+            overflow-y: auto; /* Aggiunge scroll se troppi giocatori */
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+        }
+        #playerList li {
+            background-color: #f9f9f9;
+            margin-bottom: 8px;
+            padding: 10px 15px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center; /* Centra il testo del giocatore */
+            font-size: 1.05em;
+            color: #444;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        #playerList li:hover {
+            background-color: #f0f0f0;
+        }
+        #statusMessage {
+            margin-top: 25px;
+            font-weight: bold;
+            font-size: 1.3em;
+        }
+        .online {
+            color: #28a745; /* Verde scuro */
+        }
+        .offline {
+            color: #dc3545; /* Rosso scuro */
+        }
+        .loading {
+            color: #ffc107; /* Giallo */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Stato del Server Minecraft</h1>
+        <div class="server-info">
+            Server: <strong><span id="serverIpDisplay">Caricamento...</span></strong><br>
+            <span id="motdDisplay"></span>
+        </div>
+
+        <p id="playerCount" class="loading">Caricamento...</p>
+        <ul id="playerList">
+            </ul>
+        <p id="statusMessage" class="loading"></p>
+    </div>
+
+    <script>
+        // *** IMPORTANTE: MODIFICA QUESTO INDIRIZZO CON IL TUO ***
+        const serverAddress = 'card-idle.joinmc.link'; // Il tuo indirizzo di Playit.gg/joinmc.link
+
+        const statusApiUrl = `https://api.mcstatus.io/v2/status/java/${serverAddress}`;
+
+        async function fetchServerStatus() {
+            const playerCountElement = document.getElementById('playerCount');
+            const playerListElement = document.getElementById('playerList');
+            const statusMessageElement = document.getElementById('statusMessage');
+            const serverIpDisplayElement = document.getElementById('serverIpDisplay');
+            const motdDisplayElement = document.getElementById('motdDisplay');
+
+            playerListElement.innerHTML = ''; // Pulisce la lista precedente
+            playerCountElement.textContent = 'Caricamento...';
+            playerCountElement.className = 'loading';
+            statusMessageElement.textContent = 'Verifica stato server...';
+            statusMessageElement.className = 'loading';
+            serverIpDisplayElement.textContent = serverAddress; // Mostra subito l'IP
+
+            try {
+                const response = await fetch(statusApiUrl);
+                const data = await response.json();
+
+                if (data.online) {
+                    playerCountElement.textContent = `Giocatori Online: ${data.players.online} / ${data.players.max}`;
+                    statusMessageElement.textContent = 'Il server è ONLINE!';
+                    statusMessageElement.className = 'online';
+                    motdDisplayElement.innerHTML = data.motd.html || data.motd.clean || ''; // Mostra il MOTD
+
+                    if (data.players.list && data.players.list.length > 0) {
+                        data.players.list.forEach(player => {
+                            const li = document.createElement('li');
+                            li.textContent = player.name_clean; // Usa name_clean per nomi senza formattazione
+                            playerListElement.appendChild(li);
+                        });
+                    } else {
+                        const li = document.createElement('li');
+                        li.textContent = "Nessun giocatore connesso al momento.";
+                        playerListElement.appendChild(li);
+                    }
+                } else {
+                    playerCountElement.textContent = `Server Offline`;
+                    statusMessageElement.textContent = 'Il server è OFFLINE!';
+                    statusMessageElement.className = 'offline';
+                    motdDisplayElement.innerHTML = ''; // Nessun MOTD se offline
+                }
+            } catch (error) {
+                console.error("Errore nel recupero dello stato del server:", error);
+                playerCountElement.textContent = "Impossibile recuperare stato.";
+                statusMessageElement.textContent = "Si è verificato un errore.";
+                statusMessageElement.className = 'offline';
+                motdDisplayElement.innerHTML = '';
+            }
+        }
+
+        // Recupera lo stato al caricamento della pagina
+        fetchServerStatus();
+
+        // Aggiorna lo stato ogni 30 secondi (opzionale, puoi aumentare o diminuire)
+        setInterval(fetchServerStatus, 30000); 
+    </script>
+</body>
+</html>
